@@ -4,11 +4,11 @@ import { usePathname } from "next/navigation";
 import Logo from "@/components/Logo";
 
 const items = [
-  { href: "/trainer", label: "Календарь" },
-  { href: "/trainer/payments", label: "Оплаты" },
-  { href: "/trainer/clients", label: "Клиенты" },
-  { href: "/trainer/reports", label: "Отчёты" },
-  { href: "/trainer/templates", label: "Шаблоны" },
+    { href: "/trainer", label: "Календарь" },
+    { href: "/trainer/payments", label: "Оплаты" },
+    { href: "/trainer/clients", label: "Клиенты" },
+    { href: "/trainer/packages", label: "Блоки занятий" },
+    { href: "/trainer/reports", label: "Отчёты" },
 ];
 
 export default function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: () => void }) {

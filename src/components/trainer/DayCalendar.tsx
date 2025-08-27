@@ -1,34 +1,24 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import MiniSessionCard from "./MiniSessionCard";
-
-type Session = { id: string; time: string; client: string; type?: "1:1" | "group"; status?: "scheduled" | "completed" | "cancelled" };
 
 export default function DayCalendar() {
   const [view, setView] = useState<"day" | "week">("day");
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const daySessions: Session[] = useMemo(
-    () => [
-      { id: "1", time: "08:00", client: "Иван П.", type: "1:1", status: "scheduled" },
-      { id: "2", time: "10:30", client: "Мария К.", type: "1:1", status: "scheduled" },
-      { id: "3", time: "12:00", client: "Группа #12", type: "group", status: "scheduled" },
-      { id: "4", time: "17:30", client: "Олег С.", type: "1:1", status: "scheduled" },
-    ],
-    []
-  );
-
-  const week: { day: string; items: Session[] }[] = useMemo(
-    () => [
-      { day: "Пн", items: daySessions.slice(0, 2) },
-      { day: "Вт", items: [] },
-      { day: "Ср", items: daySessions.slice(2) },
-      { day: "Чт", items: [] },
-      { day: "Пт", items: daySessions.slice(0, 1) },
-      { day: "Сб", items: [] },
-      { day: "Вс", items: [] },
-    ],
-    [daySessions]
-  );
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const today = new Date();
+      const day = today.toISOString().split("T")[0];
+      const res = await fetch(`/api/trainer/sessions?day=${day}`);
+      const data = await res.json();
+      setItems(res.ok ? data.items : []);
+      setLoading(false);
+    };
+    load();
+  }, []);
 
   return (
     <div className="space-y-3">
@@ -39,25 +29,25 @@ export default function DayCalendar() {
 
       {view === "day" ? (
         <div className="space-y-2">
-          {daySessions.length === 0 ? (
-            <EmptyState title="На сегодня ничего не запланировано" subtitle="Нажмите ‘Создать тренировку’ вверху" />
-          ) : (
-            daySessions.map((s) => <MiniSessionCard key={s.id} session={s} />)
+          {loading && <div className="rounded-lg border border-slate-800 p-6 text-center text-sm text-slate-400">Загружаем…</div>}
+          {!loading && items.length === 0 && (
+            <div className="rounded-lg border border-slate-800 p-6 text-center text-sm text-slate-400">На сегодня ничего не запланировано</div>
           )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {week.map((col, idx) => (
-            <div key={idx} className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
-              <div className="mb-2 text-sm font-semibold text-slate-200">{col.day}</div>
-              {col.items.length === 0 ? (
-                <div className="text-xs text-slate-500">Нет тренировок</div>
-              ) : (
-                <div className="space-y-2">{col.items.map((s) => <MiniSessionCard key={s.id} session={s} />)}</div>
-              )}
-            </div>
+          {!loading && items.map((s) => (
+            <MiniSessionCard
+              key={s.id}
+              session={{
+                id: s.id,
+                time: new Date(s.startsAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                client: `${s.client.lastName ?? ""} ${s.client.firstName ?? ""}`.trim() || "Клиент",
+                type: s.type,
+                status: s.status,
+              }}
+            />
           ))}
         </div>
+      ) : (
+        <div className="text-sm text-slate-400">Неделя: добавим через агрегирующий запрос после базовой проверки дня.</div>
       )}
     </div>
   );

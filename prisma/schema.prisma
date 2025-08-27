@@ -21,4 +21,140 @@ model User {
   tz           String   @default("UTC")
   passwordHash String?
   createdAt    DateTime @default(now())
+
+  packages       Package[]
+  trainerClients ClientProfile[] @relation("TrainerClients")
+  clientProfile  ClientProfile?  @relation("AppUserClientProfile")
+
+  sessionsAsTrainer  Session[]  @relation("UserToSessionTrainer")
+  purchasesAsTrainer Purchase[] @relation("UserToPurchaseTrainer")
+}
+
+model Package {
+  id        String @id @default(cuid())
+  trainerId String
+  trainer   User   @relation(fields: [trainerId], references: [id])
+
+  title         String
+  sessionsCount Int
+  priceCents    Int
+  currency      String @default("USD")
+  validityDays  Int    @default(30)
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchases Purchase[]
+}
+
+model ClientProfile {
+  id        String @id @default(cuid())
+  trainerId String
+  trainer   User   @relation("TrainerClients", fields: [trainerId], references: [id])
+
+  userId String? @unique
+  user   User?   @relation("AppUserClientProfile", fields: [userId], references: [id])
+
+  firstName String
+  lastName  String
+  phone     String?
+  email     String?
+  birthday  DateTime?
+  gender    String?
+
+  status    String  @default("active")
+  avatarUrl String?
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  measurements Measurement[]
+  photos       ClientPhoto[]
+
+  // НОВОЕ
+  purchases Purchase[]
+  sessions  Session[]
+}
+
+model Measurement {
+  id       String        @id @default(cuid())
+  clientId String
+  client   ClientProfile @relation(fields: [clientId], references: [id])
+
+  chest   Float?
+  waist   Float?
+  hips    Float?
+  bicepsR Float?
+  bicepsL Float?
+  thighR  Float?
+  thighL  Float?
+  calfR   Float?
+  calfL   Float?
+
+  weightKg   Float?
+  heightCm   Float?
+  bodyFatPct Float?
+
+  takenAt DateTime @default(now())
+  note    String?
+}
+
+model ClientPhoto {
+  id       String        @id @default(cuid())
+  clientId String
+  client   ClientProfile @relation(fields: [clientId], references: [id])
+
+  kind    String // "avatar" | "before" | "progress"
+  url     String
+  takenAt DateTime @default(now())
+  note    String?
+}
+
+model Purchase {
+  id        String @id @default(cuid())
+  trainerId String
+  trainer   User   @relation("UserToPurchaseTrainer", fields: [trainerId], references: [id])
+
+  clientId String
+  client   ClientProfile @relation(fields: [clientId], references: [id])
+
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id])
+
+  sessionsTotal Int
+  sessionsUsed  Int      @default(0)
+  priceCents    Int
+  currency      String   @default("USD")
+  paidAt        DateTime @default(now())
+  expiresAt     DateTime
+  status        String   @default("active")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions Session[]
+}
+
+model Session {
+  id        String @id @default(cuid())
+  trainerId String
+  trainer   User   @relation("UserToSessionTrainer", fields: [trainerId], references: [id])
+
+  clientId String
+  client   ClientProfile @relation(fields: [clientId], references: [id])
+
+  purchaseId String?
+  purchase   Purchase? @relation(fields: [purchaseId], references: [id])
+
+  startsAt   DateTime
+  endsAt     DateTime
+  type       String   @default("1:1")
+  status     String   @default("scheduled")
+  priceCents Int?
+  note       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
